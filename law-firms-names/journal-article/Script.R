@@ -9,6 +9,8 @@ library(stringr)
 library(tidyr)
 library(units)
 
+sf_use_s2(FALSE)
+
 data <- read_csv(here("../../ru-smb-companies/legal/panel.csv"))
 er <- read_csv(here("journal-article", "economic-regions.csv"))
 tiles <- read_csv(here("common", "russia-tiles.csv"))
@@ -117,7 +119,6 @@ region_vectors <- vectors %>%
   filter(cnt > quantile(cnt, .05)) %>% 
   select(-cnt)
 
-sf_use_s2(FALSE)
 neighboring_regions <- as_tibble(cbind(
   iso = ru$shapeISO,
   as.data.frame(st_intersects(ru, ru, sparse = FALSE, remove_self = TRUE))
@@ -173,17 +174,59 @@ region_distances %>%
   ggplot(aes(x = dist)) +
   geom_freqpoly()
 
-ggplot(region_names_distances, aes(x = is_neighbor, y = namedist)) +
-  geom_boxplot()
+neighbor_plot <- region_names_distances %>% 
+  ggplot(aes(x = namedist, y = is_neighbor)) +
+  geom_boxplot() +
+  geom_text(
+    aes(
+      label = after_stat(paste("M == ", round(xmiddle, 2))),
+      x = stage(namedist, after_stat = xmiddle)),
+    stat = "boxplot",
+    vjust = -.75,
+    parse = TRUE,
+    size = 3,
+    family = "Segoe UI Semilight",
+    angle = 90
+  ) + 
+  scale_y_discrete(labels = c("Other\nregions", "Neighboring\nregions")) + 
+  labs(
+    x = "Euclidean distance between region vectors",
+    y = ""
+  ) +
+  theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
+neighbor_plot
 
 t.test(namedist ~ is_neighbor, data = region_names_distances)
 wilcox.test(namedist ~ is_neighbor, data = region_names_distances)
 region_names_distances %>% group_by(is_neighbor) %>% summarise(m = median(namedist))
 
-ggplot(region_names_distances, aes(x = geo_distance, y = namedist)) +
-  geom_point()
+distance_plot <- region_names_distances %>% 
+  ggplot(aes(x = geo_distance, y = namedist)) +
+  geom_point(color = "grey50", size = 1, shape = 21) +
+  geom_smooth(method = "lm", se = FALSE) +
+  annotate(
+    "label", 
+    x = as_units(Inf, "km"),
+    y = Inf, 
+    label = paste(
+      "r[Pearson] == ",
+      round(cor.test(~namedist+geo_distance, data = region_names_distances)$estimate, 2)
+    ),
+    hjust = 1,
+    vjust = 1,
+    parse = TRUE,
+    size = 3,
+    family = "Segoe UI Semilight",
+    label.size = 0,
+  ) + 
+  labs(
+    x = "Geographical distance between regions",
+    y = "Distance between region vectors"
+  ) +
+  theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
+distance_plot
 
-cor.test(~namedist+geo_distance, data = filter(region_names_distances, namedist < .18))
+cor.test(~namedist+geo_distance, data = filter(region_names_distances))$estimate
 
 # Look at distribution by various classes
 count(clustered, tag, sort = TRUE)

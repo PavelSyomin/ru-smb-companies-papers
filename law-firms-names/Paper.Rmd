@@ -76,8 +76,22 @@ Q4 and Q5 follow a slightly different methodics. First, all firm names are clust
 
 The time range of the source data is from 2016 to 2023. Only the firms that have existed for at least 3 years are included in the analysis. Only organizations are studied, while individual entrepreneurs are omitted, because they do not have firm names. Firm names are preprocessed to remove any parts pointing to the legal form of the business (e.g. limited liability company or public stock company), because these parts are common to the majority of names and thus do not add anything valuable. Law firms are selected by filtering using the following condition: main activity code equals 69.10 (activity in the area of law according to All-Russia Classifier of Kinds of Economic Activity). This filtering technique is derived from @Moiseeva2016. 
 
-
 # 3. Results and discussion
+
+## 3.1. Semantic distance between heighboring regions is smaller
+
+Figure 1 shows the median semantic distance between law firm names of neighboring regions versus the same of regions that do not have a common border. Despite the difference in medians is relatively small, it does exist, and the overall distribution of values for non-neighboring regions is shifted to the area of higher distances compared to the distribution of values for bordering regions. Thus, the hypothesis from Q1 turns out to be true: neighboring regions are indeed closer to each other in terms of semantic distances between their law firm names.
+
+```{r fig-1-neighbors, fig.cap="Figure 1. The relationship between neightboring status of regions and semantic distance between names of law firms incorporated in these regions", fig.height=3}
+neighbor_plot
+```
+## 3.2. The larger the geographical distance, the larger is semantic distance
+
+Figure 2 shows the continuous analog of Figure 1, i.e. the scatter plot of geographical versus semantic distance between regions according to their law firms names. The observed correlation is weak yet positive. Besides, there are two clusters of points. Thus, for Q2 the answer is partial: there is a positive relationship between the geographical distance and semantic distance of law firm names between regions, but the observed correlation is weak, and also there is a minor group of region pairs that seems to have no such correlation at all.
+
+```{r fig-2-distance-plot, fig.cap="Figure 2. Relationship between geographical distance between regions and semantic distance between names of law firms incorporated in these regions", fig.height=3}
+distance_plot
+```
 
 # 4. Conclusion
 
