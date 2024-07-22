@@ -165,10 +165,33 @@ region_names_distances <- region_names_distances %>%
 region_distances_stat <- region_distances %>% 
   group_by(economic_region, within) %>% 
   summarise(dist = median(dist))
-region_distances %>% 
-  ggplot(aes(x = economic_region, y = dist, color = within)) +
+
+economic_regions_distances <- region_distances %>% 
+  ggplot(aes(x = within, y = dist)) +
   geom_violin(draw_quantiles = c(.5)) +
-  geom_jitter(width = .1, size = .2)
+  geom_jitter(size = 1, shape = 21, alpha = .3) +
+  geom_text(
+    aes(
+      y = stage(dist, after_stat = 0),
+      label = after_stat(paste("M == ", round(middle, 2)))
+    ),
+    stat = "boxplot",
+    vjust = -.25,
+    parse = TRUE,
+    size = 3,
+    family = "Segoe UI Semilight",
+  ) +
+  scale_x_discrete(
+    name = "Distance type",
+    labels = c("Inside–outside", "Within")
+  ) +
+  facet_wrap(vars(economic_region), ncol = 3) +
+  labs(
+    y = "Distance between regions"
+  ) +
+  theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
+economic_regions_distances
+
 arrange(region_distances, -dist)
 region_distances %>% 
   ggplot(aes(x = dist)) +
@@ -248,7 +271,8 @@ count(clustered, region, group) %>%
   facet_wrap(vars(group), ncol = 2)
 
 # Field-based vs service-based names
-count(clustered, region, group) %>% 
+naming_strategies <- clustered %>% 
+  count(region, group) %>% 
   filter(group != "Misc") %>% 
   group_by(region) %>% 
   arrange(-n) %>% 
@@ -266,12 +290,67 @@ count(clustered, region, group) %>%
   right_join(er) %>% 
   drop_na(main_group) %>% 
   ggplot(aes(x = col, y = -row)) +
-  geom_tile(aes(fill = economic_region, width = 1, height = 1, color = main_group), linewidth = 2) +
-  geom_text(aes(x = col - .25, y = -row + .25, label = code_en), size = 3, hjust = 0) +
-  geom_text(aes(x = col - .3, y = -row, label = Law), shape = 21) +
-  geom_text(aes(x = col - .3, y = -row - .3, label = Service), shape = 21) +
-  geom_text(aes(x = col + .3, y = -row - .3, label = Form), shape = 21) +
-  geom_point(aes(x = col, y = -row, fill = main_group), shape = 21) +
-  #scale_fill_manual(values = c("black", "white")) +
-  scale_fill_brewer(palette = "Set3") +
-  coord_fixed()
+  geom_tile(aes(fill = main_group, width = 1, height = 1)) +
+  geom_text(
+    aes(x = col - .45, y = -row + .45, label = code_en),
+    size = 3, hjust = 0, vjust = 1, family = "Segoe UI Semilight"
+  ) +
+  geom_text(
+    aes(x = col - .25, y = -row, label = Law),
+    size = 3, family = "Segoe UI Semilight"
+  ) +
+  geom_text(
+    aes(x = col - .25, y = -row - .35, label = Service),
+    size = 3, family = "Segoe UI Semilight"
+  ) +
+  geom_text(
+    aes(x = col + .25, y = -row - .25, label = Form),
+    size = 3, family = "Segoe UI Semilight"
+  ) +
+  scale_color_brewer(palette = "Set3") +
+  coord_fixed() +
+  theme_void(base_family = "Segoe UI Semilight", base_size = 9)
+naming_strategies
+
+naming_strategies <- clustered %>% 
+  count(region, group) %>% 
+  filter(group != "Misc") %>% 
+  group_by(region) %>% 
+  arrange(-n) %>% 
+  summarise(
+    group = group, 
+    share = round(100 * n / sum(n)),
+    main_group = first(group)
+  ) %>% 
+  pivot_wider(
+    id_cols = c("region", "main_group"), 
+    names_from = group,
+    values_from = share
+  ) %>% 
+  mutate(ratio = (Law - Service) / (Law + Service)) %>% 
+  right_join(tiles, by = c("region" = "name")) %>%
+  drop_na(main_group) %>% 
+  ggplot(aes(x = col, y = -row)) +
+  geom_tile(aes(fill = main_group, width = 1, height = 1)) +
+  geom_text(
+    aes(x = col - .45, y = -row + .45, label = code_en),
+    size = 3, hjust = 0, vjust = 1, family = "Segoe UI Semilight"
+  ) +
+  coord_fixed() +
+  theme_void(base_family = "Segoe UI Semilight", base_size = 9) +
+  theme(
+    legend.position = c(1, 0),
+    legend.direction = "horizontal",
+    legend.justification = c(1, 0),
+    legend.title.position = "top"
+  )
+naming_strategies
+
+clustered %>% 
+  filter(group != "Misc") %>%
+  count(region, group, sort = TRUE) %>% 
+  group_by(region) %>% 
+  slice_max(n) %>% 
+  right_join(er) %>% 
+  ungroup() %>% 
+  count(economic_region, group)

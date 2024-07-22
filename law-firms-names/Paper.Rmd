@@ -85,6 +85,7 @@ Figure 1 shows the median semantic distance between law firm names of neighborin
 ```{r fig-1-neighbors, fig.cap="Figure 1. The relationship between neightboring status of regions and semantic distance between names of law firms incorporated in these regions", fig.height=3}
 neighbor_plot
 ```
+
 ## 3.2. The larger the geographical distance, the larger is semantic distance
 
 Figure 2 shows the continuous analog of Figure 1, i.e. the scatter plot of geographical versus semantic distance between regions according to their law firms names. The observed correlation is weak yet positive. Besides, there are two clusters of points. Thus, for Q2 the answer is partial: there is a positive relationship between the geographical distance and semantic distance of law firm names between regions, but the observed correlation is weak, and also there is a minor group of region pairs that seems to have no such correlation at all.
@@ -92,6 +93,24 @@ Figure 2 shows the continuous analog of Figure 1, i.e. the scatter plot of geogr
 ```{r fig-2-distance-plot, fig.cap="Figure 2. Relationship between geographical distance between regions and semantic distance between names of law firms incorporated in these regions", fig.height=3}
 distance_plot
 ```
+
+## 3.3. Semantic distance within economic regions is smaller
+
+Figure 3 shows the comparison of distances between law firm names within economic regions and outside them. The results are mixed. In some cases, the distance between regions belonging to the same economic region is a bit smaller than the distance between regions belonging to an economic region and other regions that do not belong to this economic region. However, there are several economic regions where this tendency does not holds. In addition, it looks like that the overall shape of semantic distance distributions in these economic regions imply that there are internal subdivisions within this economic region, and thus it seems to be not as united and integral as it is theoretically suggested. This observation has a potential to be quite intriguing for checking the validity of economic regions classification in Russia. Nevertheless, its relative importance in the context of regioning task is quite low, and thus there is no need to make provisions on classification updates right now.
+
+```{r fig-3-economic-regions-distance, fig.cap="Figure 3. Semantic distance between regions within and outside economic regions", fig.height=4}
+economic_regions_distances
+```
+
+## 3.4. There are three primary naming strategies: form-, field-, service-based
+
+Manual analysis of clustered names samples shows that all the law firm names, except for uncategorized, can be grouped into three generic catgories: form-based, field-based, service-based names. *Form-based names* are focused on the organizational form, or type, of business, company or firm and usually include the words like “company”, “partnership”, “corporation”, “alliance”, “center”, “bureau”. In contrast, *field-based names* point to the field of company's activity, i.e. law, and thus are usually based on law-related words such as “legal”, “juridical”, “lex”. *Service-based names* mention the service nature of the business in general by using words “services” or address the specific kinds of services or areas of related business, e.g. “consulting”, “analytics”, “expertise”, “bankruptcy”, “arbitrazh”, “accounting”, “finance”, “real estate”.  As seen in Figure 4, field-based and service-based naming strategies dominate over form-based, sharing in total more than 80% of all strategical law firm names in the majority of regions. Consequently, all the regions may be divided into two broad groups: either with field-based naming of law firms or with service-based naming of law firms. The spatial patterns of these grouping are nevertheless obscure, with no clear geographical tendencies, and the overall spatial distribution of these naming strategies looks random.
+
+```{r fig-4-naming-strategies, fig.cap="Figure 4. Map of naming strategies by regions and economic regions"}
+
+```
+
+
 
 # 4. Conclusion
 
