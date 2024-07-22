@@ -74,7 +74,9 @@ regions_plot_agri_forestry <- rsmp_data %>%
     end_date >= "2021-12-31",
     !is.na(ac_type)) %>% 
   count(region, ac_type) %>% 
-  left_join(regions, by = c("region" = "name")) %>% 
+  right_join(regions, by = c("region" = "name")) %>% 
+  pivot_wider(names_from = ac_type, values_from = n) %>% 
+  pivot_longer(cols = c(labels[4], labels[5]), names_to = "ac_type", values_to = "n") %>% 
   st_as_sf() %>% 
   ggplot() +
   geom_sf(aes(fill = n / 1000), linewidth = .05) +

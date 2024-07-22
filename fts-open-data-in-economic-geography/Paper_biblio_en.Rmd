@@ -1,8 +1,8 @@
 ---
 output:
   word_document:
-    reference_doc: assets/reference.docx
-bibliography: assets/biblio_en.bib
+    reference_doc: "assets/reference.docx"
+bibliography: "assets/biblio_en.bib"
 csl: "assets/citations.csl"
 link-bibliography: false
 nocite: "@*"
