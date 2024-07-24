@@ -10,7 +10,13 @@ link-bibliography: False
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  warning = FALSE, 
+  message = FALSE, 
+  echo = FALSE, 
+  fig.width = 4.96, 
+  fig.id = FALSE,
+  dpi = 300)
 ```
 
 ```{r imports, cache=TRUE, include=FALSE}
@@ -26,13 +32,14 @@ source(here("journal-article", "Script.R"))
 
 <div custom-style="Abstract">
 
-**Abstract:** text.
+**Abstract:** the research is focused on integral analysis of law firm names in Russia and its geographical aspects. The main problem of the study is to find out whether several spatial relations between subdivisions of the country, namely neighboring, proximity, and belonging to an economic region, are reflected in law firm naming, and how law firm naming depends on these relations. To conduct the analysis, data about law firm names is extracted from the open dumps of the state small and medium-sized businesses registry. Law firm names are converted into numeric vectors using YandexGPT embeddings, then clustered with KMeans method, and manually grouped to detect main naming strategies. Numeric representations of law firm names within each country's subdivision are averaged to get a regional embedding, and then law firm names of the regions are compared using regional embeddings. It is found out that regions that are geographically closer to each other or have a common border tend to have slightly more similar law firm names. In addition, regions belonging to the same economic region have more similar law firm names either. There are three main law firms naming strategies: form-based, law-based, service-based. Volga and North Caucasus economic regions are characterized by the prevalence of service-based strategy, and Volga-Vyatka economic region has a law-based strategy, while other territories have mixed naming strategies. The results of the study support the existing widely used classification of economic regions in Russia and argue the impact of neighboring, proximity, and links on the economic and cultural properties of the territories. The administrative open data processing techniques, as well as methods of working with firm names based on neural networks proposed in this paper may be used by other economic geographers for their research purposes.
 
 </div>
 
 <div custom-style="Keywords">
 
-**Keywords:** naming; law firms; text embeddings; economic regions. 
+**Keywords:** naming; law firms; text embeddings; economic regions.
+
 </div>
 
 # 1. Introduction
