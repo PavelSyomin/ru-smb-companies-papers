@@ -162,17 +162,13 @@ region_names_distances <- region_names_distances %>%
   left_join(neighboring_regions, by = c("iso_code" = "iso", "iso_code_2" = "iso_2")) %>% 
   left_join(geo_distances, by = c("iso_code" = "iso", "iso_code_2" = "iso_2"))
 
-region_distances_stat <- region_distances %>% 
-  group_by(economic_region, within) %>% 
-  summarise(dist = median(dist))
-
-economic_regions_distances <- region_distances %>% 
-  ggplot(aes(x = within, y = dist)) +
+economic_regions_distances <- region_names_distances %>% 
+  ggplot(aes(x = within, y = namedist)) +
   geom_violin(draw_quantiles = c(.5)) +
   geom_jitter(size = 1, shape = 21, alpha = .3) +
   geom_text(
     aes(
-      y = stage(dist, after_stat = 0),
+      y = stage(namedist, after_stat = 0),
       label = after_stat(paste("M == ", round(middle, 2)))
     ),
     stat = "boxplot",
@@ -192,10 +188,6 @@ economic_regions_distances <- region_distances %>%
   theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
 economic_regions_distances
 
-arrange(region_distances, -dist)
-region_distances %>% 
-  ggplot(aes(x = dist)) +
-  geom_freqpoly()
 
 neighbor_plot <- region_names_distances %>% 
   ggplot(aes(x = namedist, y = is_neighbor)) +
@@ -251,106 +243,81 @@ distance_plot
 
 cor.test(~namedist+geo_distance, data = filter(region_names_distances))$estimate
 
-# Look at distribution by various classes
-count(clustered, tag, sort = TRUE)
-count(clustered, group, sort = TRUE)
-count(clustered, strategy, sort = TRUE)
-count(clustered, western, sort = TRUE)
-
 # Tile grid map of regions by naming group
-count(clustered, region, group) %>% 
-  filter(group != "Misc") %>% 
-  group_by(region) %>% 
-  summarise(group = group, share = n / sum(n)) %>% 
-  right_join(tiles, by = c("region" = "name")) %>% 
-  drop_na(share) %>% 
-  ggplot(aes(x = col, y = -row)) +
-  geom_raster(aes(fill = share)) +
-  geom_text(aes(label = code_en), size = 3) +
-  coord_fixed() +
-  facet_wrap(vars(group), ncol = 2)
+ru_crs <- st_crs("+proj=aea +lat_0=0 +lon_0=100 +lat_1=68 +lat_2=44 +x_0=0 +y_0=0 +ellps=krass +towgs84=28,-130,-95,0,0,0,0 +units=m +no_defs")
+ru <- st_read(here("journal-article", "ru.geojson"))
 
-# Field-based vs service-based names
+er_short_labels <- tibble(
+  economic_region = sort(unique(er$economic_region)),
+  label = c("C", "CC", "ES", "FE", "N", "NC", "NW", "U", "V", "VV", "WS")
+)
+er_geo <- ru %>% 
+  left_join(er, by = c("shapeISO" = "iso_code")) %>% 
+  group_by(economic_region) %>% 
+  summarise() %>% 
+  left_join(er_short_labels)
+
 naming_strategies <- clustered %>% 
-  count(region, group) %>% 
   filter(group != "Misc") %>% 
+  count(region, group, sort = TRUE) %>% 
   group_by(region) %>% 
-  arrange(-n) %>% 
   summarise(
-    group = group, 
+    group = str_to_lower(group), 
     share = round(100 * n / sum(n)),
-    main_group = first(group)
+    main_group = first(group),
+    .groups = "drop"
   ) %>% 
   pivot_wider(
     id_cols = c("region", "main_group"), 
     names_from = group,
     values_from = share
   ) %>% 
-  right_join(tiles, by = c("region" = "name")) %>% 
+  mutate(
+    diff = (service - law),
+    type = case_when(
+      diff < -3 ~ -1,
+      diff > 3 ~ 1,
+      is.na(diff) ~ NA_real_,
+      TRUE ~ 0
+    ),
+    type = factor(
+      type, 
+      labels = c("Law > Service", "Law ≈ Service", "Service > Law")
+    )
+  ) %>% 
   right_join(er) %>% 
-  drop_na(main_group) %>% 
-  ggplot(aes(x = col, y = -row)) +
-  geom_tile(aes(fill = main_group, width = 1, height = 1)) +
-  geom_text(
-    aes(x = col - .45, y = -row + .45, label = code_en),
-    size = 3, hjust = 0, vjust = 1, family = "Segoe UI Semilight"
+  right_join(ru, by = c("iso_code" = "shapeISO")) %>% 
+  st_as_sf() %>% 
+  ggplot() +
+  geom_sf(linewidth = .05, aes(fill = type)) +
+  geom_sf(data = er_geo, linewidth = .5, fill = "transparent") +
+  geom_sf_label(
+    data = er_geo,
+    aes(label = label),
+    family = "Segoe UI Semilight",
+    label.r = unit(0, "mm"),
+    label.size = 0,
+    label.padding = unit(0, "mm"),
+    fill = "gray30",
+    color = "gray90"
   ) +
-  geom_text(
-    aes(x = col - .25, y = -row, label = Law),
-    size = 3, family = "Segoe UI Semilight"
+  scale_fill_brewer(name = "Naming strategy", palette = "PRGn") +
+  scale_discrete_identity(
+    aesthetics = "label",
+    name = "Economic region",
+    breaks = er_geo$label,
+    labels = er_geo$economic_region,
+    guide = "legend"
   ) +
-  geom_text(
-    aes(x = col - .25, y = -row - .35, label = Service),
-    size = 3, family = "Segoe UI Semilight"
-  ) +
-  geom_text(
-    aes(x = col + .25, y = -row - .25, label = Form),
-    size = 3, family = "Segoe UI Semilight"
-  ) +
-  scale_color_brewer(palette = "Set3") +
-  coord_fixed() +
-  theme_void(base_family = "Segoe UI Semilight", base_size = 9)
-naming_strategies
-
-naming_strategies <- clustered %>% 
-  count(region, group) %>% 
-  filter(group != "Misc") %>% 
-  group_by(region) %>% 
-  arrange(-n) %>% 
-  summarise(
-    group = group, 
-    share = round(100 * n / sum(n)),
-    main_group = first(group)
-  ) %>% 
-  pivot_wider(
-    id_cols = c("region", "main_group"), 
-    names_from = group,
-    values_from = share
-  ) %>% 
-  mutate(ratio = (Law - Service) / (Law + Service)) %>% 
-  right_join(tiles, by = c("region" = "name")) %>%
-  drop_na(main_group) %>% 
-  ggplot(aes(x = col, y = -row)) +
-  geom_tile(aes(fill = main_group, width = 1, height = 1)) +
-  geom_text(
-    aes(x = col - .45, y = -row + .45, label = code_en),
-    size = 3, hjust = 0, vjust = 1, family = "Segoe UI Semilight"
-  ) +
-  coord_fixed() +
+  coord_sf(crs = ru_crs, expand = FALSE) +
   theme_void(base_family = "Segoe UI Semilight", base_size = 9) +
   theme(
-    legend.position = c(1, 0),
+    legend.position = "bottom",
     legend.direction = "horizontal",
-    legend.justification = c(1, 0),
-    legend.title.position = "top"
+    legend.title.position = "top",
+    legend.box = "vertical",
+    legend.box.just = "left",
+    legend.justification = c(0.1, 1)
   )
 naming_strategies
 
-clustered %>% 
-  filter(group != "Misc") %>%
-  count(region, group, sort = TRUE) %>% 
-  group_by(region) %>% 
-  slice_max(n) %>% 
-  right_join(er) %>% 
-  ungroup() %>% 
-  count(economic_region, group)

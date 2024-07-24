@@ -13,6 +13,11 @@ link-bibliography: False
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r imports, cache=TRUE, include=FALSE}
+library(here)
+source(here("journal-article", "Script.R"))
+```
+
 <div custom-style="Affiliation">
 
 ¹Perm State University, Geographical faculty, Department of social and economic geography, Perm, Russia; e-mail: ntsp\@ya.ru
@@ -104,15 +109,23 @@ economic_regions_distances
 
 ## 3.4. There are three primary naming strategies: form-, field-, service-based
 
-Manual analysis of clustered names samples shows that all the law firm names, except for uncategorized, can be grouped into three generic catgories: form-based, field-based, service-based names. *Form-based names* are focused on the organizational form, or type, of business, company or firm and usually include the words like “company”, “partnership”, “corporation”, “alliance”, “center”, “bureau”. In contrast, *field-based names* point to the field of company's activity, i.e. law, and thus are usually based on law-related words such as “legal”, “juridical”, “lex”. *Service-based names* mention the service nature of the business in general by using words “services” or address the specific kinds of services or areas of related business, e.g. “consulting”, “analytics”, “expertise”, “bankruptcy”, “arbitrazh”, “accounting”, “finance”, “real estate”.  As seen in Figure 4, field-based and service-based naming strategies dominate over form-based, sharing in total more than 80% of all strategical law firm names in the majority of regions. Consequently, all the regions may be divided into two broad groups: either with field-based naming of law firms or with service-based naming of law firms. The spatial patterns of these grouping are nevertheless obscure, with no clear geographical tendencies, and the overall spatial distribution of these naming strategies looks random.
+Manual analysis of clustered names samples shows that all the law firm names, except for uncategorized, can be grouped into three generic catgories: form-based, field-based, service-based names. *Form-based names* are focused on the organizational form, or type, of business, company or firm and usually include the words like “company”, “partnership”, “corporation”, “alliance”, “center”, “bureau”. In contrast, *field-based names* point to the field of company's activity, i.e. law, and thus are usually based on law-related words such as “legal”, “juridical”, “lex”. *Service-based names* mention the service nature of the business in general by using words “services” or address the specific kinds of services or areas of related business, e.g. “consulting”, “analytics”, “expertise”, “bankruptcy”, “arbitrazh”, “accounting”, “finance”, “real estate”.  As seen in Figure 4, field-based and service-based naming strategies dominate over form-based, sharing in total more than 80% of all strategical law firm names in the majority of regions. Consequently, all the regions may be divided into two broad groups: either with field-based naming of law firms or with service-based naming of law firms. The spatial patterns of these grouping are nevertheless obscure, with no clear geographical tendencies, and the overall spatial distribution of these naming strategies looks random, except for the prevalence of service-based names in the European South.
 
 ```{r fig-4-naming-strategies, fig.cap="Figure 4. Map of naming strategies by regions and economic regions"}
-
+naming_strategies
 ```
 
+## 3.5. Naming strategies are not consistent over economic regions
 
+From Figure 4 one can easily conclude that few economic regions are characterized by a consistent naming strategy. In Volga-Vyatka region, law-based strategy is the most popular one among all the regions, except for the Republic of Mari El. In Volga and North Caucasus, service-based strategy prevails in the majority of regions. The same also holds for the Eastern Siberia, though the large size of the Krasnoyarsk territory, the only exception, overweights the quantity of regions with service-based stratery, thus the economic region in general can not be treated the same as Volga and North Caucasus. All the other economic regions are characterized by a blend of law firms naming strategies. 
 
 # 4. Conclusion
+
+The results of the research are mixed. On the other hand, several hypothesis have been proven: law firm names in neighboring regions are more similar than law firm names in non-neighboring regions; the smaller the geographic distance between regions, the more similar the law firm names; law firm names within an economic region are typically more similar compared to the law firm names outside an economic regions. On the other hand, the difference in the metrics of similarity is relatively small in all these cases, as well as the correlation coefficient, thus it should be noted that although the hypothesized phenomena do exist, their magnitude is weak.
+
+There are three primary law firm naming strategies: form-based, law-based, service-based. The form-based strategy is in a minority, accounting for ≈10% of all the names. Two other strategies share the remaining majority, and in some regions, law-based naming prevails, while in the others, service-based naming is more common. Service-based law firms naming is a dominant strategy in the majority of regions in the European South of Russia. Other geographical regularities regarding the law firm naming are unclear. Economic regions are typically characterized by a mixture of naming strategies, expect for Volga-Vyatka with dominating law-based strategy, and Volga with North Caucasus with service-based strategy prevailing in the majority of constituting regions.
+
+The contribution of this study is mostly theoretical and methodological. It emphasizes the importance of firm names as the source of information for business- and economy-related research. It also proposes a technique of using modern natural language processing (NLP) solutions based on artificial neural networks for integral analysis of company naming in a geographical context, as well as the usage of disaggregated administrative open data for a spatial analysis. The results argue for the effect of geographical proximity and neighboring on the similarity of economical and (to some extent) cultural properties of the territories. They also generally support the widely used classification of economic regions in Russia, though noticing a few weak places where there is an internal heterogenity within an economic region. The study also offers an example of semi-automated company names classification in a particular field of economic activity and points at some kind of geographical differentiation in the naming strategies, that may be subject to further spatial analysis. 
 
 <div custom-style="References-title">References</div>
 
