@@ -66,7 +66,7 @@ firms <- data %>%
 unique_names <- distinct(firms, name)
 
 # Save unique names to a file for processing with YandexGPT API
-if (get0("IS_PAPER", ifnotfound = FALSE)) {
+if (!get0("IS_PAPER", ifnotfound = FALSE)) {
   write_csv(
   unique_names,
   glue("names-{strftime(Sys.time(), '%Y-%m-%d-%H-%M-%S')}.csv")

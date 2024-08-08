@@ -20,8 +20,20 @@ knitr::opts_chunk$set(
 IS_PAPER <- TRUE # used in script to disable saving of names and samples
 ```
 
-```{r imports, cache=TRUE, include=FALSE}
+```{r package-imports, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(glue)
 library(here)
+library(readr)
+library(readxl)
+library(sf)
+library(stringr)
+library(tidyr)
+library(units)
+```
+
+```{r data-imports, cache=TRUE, include=FALSE}
 source(here("journal-article", "Script.R"))
 ```
 
@@ -59,7 +71,7 @@ It seems reasonable to posit that the names of Russian law firms reflect some ec
 
 The issue of obtaining information about firm names is a challenging one. All Russian organizations are registered in the state registry operated by the Federal Tax Service (FTS of Russia). An extract from this registry about a particular company can be searched and downloaded online by any person free of charge. However, a considerable sum of money must be paid and a written request submitted to the FTS of Russia to purchase a complete copy of the registry. Commercial companies offer data re-cell services, but the prices are similarly high.
 
-To address these challenges, a unified state registry of small and medium-sized businesses (SMB registry) may be used. The registry has been maintained since 2016 in accordance with Article 4.1 of the Federal Law of 24 July 2007 No. 209-FZ “On the development of small and medium-sized businesses in the Russian Federation”. All companies and individual entrepreneurs with a yearly revenue below 2 billion roubles and an average yearly number of employees below 250 are automatically included in the SMB registry, without any action being required on their part. The registry is fully downloadable at the FTS open data portal at no cost. Additionally, the portal provides a monthly record of updates made since the registry's inception. To sum it up, the SMB registry can be regarded as the most comprehensive free data source offering information on Russian business entities, both organizations and individuals.
+To address these challenges, a unified state registry of small and medium-sized businesses (SMB registry) may be used [@SMBRegistry2024]. The registry has been maintained since 2016 in accordance with Article 4.1 of the Federal Law of 24 July 2007 No. 209-FZ “On the development of small and medium-sized businesses in the Russian Federation”. All companies and individual entrepreneurs with a yearly revenue below 2 billion roubles and an average yearly number of employees below 250 are automatically included in the SMB registry, without any action being required on their part. The registry is fully downloadable at the FTS open data portal at no cost. Additionally, the portal provides a monthly record of updates made since the registry's inception. To sum it up, the SMB registry can be regarded as the most comprehensive free data source offering information on Russian business entities, both organizations and individuals.
 
 The downloadable version of the registry includes, in particular, firm names, addresses of registration (up to a settlement), and codes of activity kinds according to the National Classification of Economic Activities (NCEA). It should be noted that the registry does not include large firms, resulting in some data being absent. Nevertheless, the majority of commercial law firms in Russia (in excess of 75%) are classified as small and medium-sized businesses and thus are included in the registry. Consequently, the completeness of information is relatively high, and it can be used to draw reliable conclusions.
 
@@ -77,7 +89,7 @@ The processing of SMB registry data is conducted in a series of stages. In the i
 
 ### 2.2.3. Firm name embeddings retrieval
 
-The Yandex Foundation Models cloud service is used to transform the firm names into text vectors, or embeddings. The “text-search-query” model is selected because its purpose, as stated in the documentation, is to vectorize short texts. Prior to vectorization, the firm names are preprocessed to remove indications of organizational form such as “limited liability company”. This is done because such indications are common to the majority of names and thus have little value. The results of the queries to the Yandex API are stored separately for reuse, given that API calls are paid and take time to be completed.
+The Yandex Foundation Models cloud service [@Yandex2024] is used to transform the firm names into text vectors, or embeddings. The “text-search-query” model is selected because its purpose, as stated in the documentation, is to vectorize short texts. Prior to vectorization, the firm names are preprocessed to remove indications of organizational form such as “limited liability company”. This is done because such indications are common to the majority of names and thus have little value. The results of the queries to the Yandex API are stored separately for reuse, given that API calls are paid and take time to be completed.
 
 ### 2.2.4. Region embeddings
 
