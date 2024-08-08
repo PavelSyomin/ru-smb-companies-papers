@@ -9,13 +9,15 @@ library(stringr)
 library(tidyr)
 library(units)
 
-sf_use_s2(FALSE)
+sf_use_s2(FALSE) # disable to avoid errors in distances and intersections
 
+# Load the data
 data <- read_csv(here("../../ru-smb-companies/legal/panel.csv"))
 er <- read_csv(here("journal-article", "economic-regions.csv"))
-tiles <- read_csv(here("common", "russia-tiles.csv"))
-ru <- st_read(here("common", "ru.geojson"))
-ru_crs <- st_crs("+proj=aea +lat_0=0 +lon_0=100 +lat_1=68 +lat_2=44 +x_0=0 +y_0=0 +ellps=krass +towgs84=28,-130,-95,0,0,0,0 +units=m +no_defs")
+er_short_labels <- tibble(
+  economic_region = sort(unique(er$economic_region)),
+  label = c("C", "CC", "ES", "FE", "N", "NC", "NW", "U", "V", "VV", "WS")
+)
 org_forms <- c(
   "общество с ограниченной ответственностью",
   "общество с дополнительной ответственностью",
@@ -28,7 +30,11 @@ org_forms <- c(
   "полное товарищество",
   "товарищество на вере"
 )
+ru <- st_read(here("common", "ru.geojson"))
+ru_crs <- st_crs("+proj=aea +lat_0=0 +lon_0=100 +lat_1=68 +lat_2=44 +x_0=0 +y_0=0 +ellps=krass +towgs84=28,-130,-95,0,0,0,0 +units=m +no_defs")
+tiles <- read_csv(here("common", "russia-tiles.csv"))
 
+# Preprocess the data
 firms <- data %>% 
   filter(
     kind == 1, # companies only
@@ -60,37 +66,43 @@ firms <- data %>%
 unique_names <- distinct(firms, name)
 
 # Save unique names to a file for processing with YandexGPT API
-write_csv(
+if (get0("IS_PAPER", ifnotfound = FALSE)) {
+  write_csv(
   unique_names,
   glue("names-{strftime(Sys.time(), '%Y-%m-%d-%H-%M-%S')}.csv")
 )
+}
 
 # Load vectors obtained from YandexGPT API
 vectors <- read_csv(here("common", "names-vectors.csv"))
 
 # Clustering
 ## Find optimal number of clusters
-n_clusters <- 2:100
-scores <- sapply(
-  n_clusters, 
-  function(x) kmeans(
-    slice_sample(select(vectors, dim_0:dim_255), n = 1000),
-    centers = x)$tot.withins
-)
-ggplot(tibble(x = n_clusters, y = scores), aes(x = x, y = y)) +
-  geom_line()
+if (!get0("IS_PAPER", ifnotfound = FALSE)) {
+  n_clusters <- 2:100
+  scores <- sapply(
+    n_clusters, 
+    function(x) kmeans(
+      slice_sample(select(vectors, dim_0:dim_255), n = 1000),
+      centers = x)$tot.withins
+  )
+  ggplot(tibble(x = n_clusters, y = scores), aes(x = x, y = y)) +
+    geom_line()
+}
 
 # Cluster names and save a sample for manual analysis
 set.seed(42)
 fit <- kmeans(select(vectors, dim_0:dim_255), centers = 50)
 vectors$cluster <- fit$cluster
-vectors %>% 
-  group_by(cluster) %>% 
-  slice_sample(n = 20) %>% 
-  select(name) %>% 
-  write_csv(
-    glue("names-sample-{strftime(Sys.time(), '%Y-%m-%d-%H-%M-%S')}.csv")
-  )
+if (!get0("IS_PAPER", ifnotfound = FALSE)) {
+  vectors %>% 
+    group_by(cluster) %>% 
+    slice_sample(n = 20) %>% 
+    select(name) %>% 
+    write_csv(
+      glue("names-sample-{strftime(Sys.time(), '%Y-%m-%d-%H-%M-%S')}.csv")
+    )
+}
 
 # Load the results of manual analysis and join them with names
 cluster_labels <- read_excel(here("journal-article", "cluster-labels.xlsx"))
@@ -107,7 +119,7 @@ clustered <- vectors %>%
   drop_na(name, tin, region, settlement, lat, lon, year) %>% 
   distinct(name, tin, .keep_all = TRUE)
 
-# Distance between regions
+# Semantic distance between regions
 region_vectors <- vectors %>% 
   right_join(firms) %>% 
   right_join(firms_lifetime) %>% 
@@ -119,6 +131,7 @@ region_vectors <- vectors %>%
   filter(cnt > quantile(cnt, .05)) %>% 
   select(-cnt)
 
+# Neighbors
 neighboring_regions <- as_tibble(cbind(
   iso = ru$shapeISO,
   as.data.frame(st_intersects(ru, ru, sparse = FALSE, remove_self = TRUE))
@@ -131,6 +144,7 @@ neighboring_regions <- pivot_longer(
   values_to = "is_neighbor"
 )
 
+# Geographic distance between regions
 centroids <- st_centroid(ru) %>% select(iso = shapeISO)
 distances <- st_distance(centroids)
 units(distances) <- "km"
@@ -148,6 +162,8 @@ region_names_distances <- as_tibble(cbind(
 ))
 region_names_distances[upper.tri(region_names_distances, diag = FALSE)] <- NA 
 colnames(region_names_distances) <- c("region", pull(select(region_names_distances, region)))
+
+# Joint data on distances
 region_names_distances <- region_names_distances %>% 
   pivot_longer(-region, names_to = "region_2", values_to = "namedist") %>% 
   left_join(er) %>% 
@@ -162,34 +178,8 @@ region_names_distances <- region_names_distances %>%
   left_join(neighboring_regions, by = c("iso_code" = "iso", "iso_code_2" = "iso_2")) %>% 
   left_join(geo_distances, by = c("iso_code" = "iso", "iso_code_2" = "iso_2"))
 
-economic_regions_distances <- region_names_distances %>% 
-  ggplot(aes(x = within, y = namedist)) +
-  geom_violin(draw_quantiles = c(.5)) +
-  geom_jitter(size = 1, shape = 21, alpha = .3) +
-  geom_text(
-    aes(
-      y = stage(namedist, after_stat = 0),
-      label = after_stat(paste("M == ", round(middle, 2)))
-    ),
-    stat = "boxplot",
-    vjust = -.25,
-    parse = TRUE,
-    size = 3,
-    family = "Segoe UI Semilight",
-  ) +
-  scale_x_discrete(
-    name = "Distance type",
-    labels = c("Inside–outside", "Within")
-  ) +
-  facet_wrap(vars(economic_region), ncol = 3) +
-  labs(
-    y = "Distance between regions"
-  ) +
-  theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
-economic_regions_distances
-
-
-neighbor_plot <- region_names_distances %>% 
+# Plot about neighborhood (Figure 1)
+neighbors_plot <- region_names_distances %>% 
   ggplot(aes(x = namedist, y = is_neighbor)) +
   geom_boxplot() +
   geom_text(
@@ -209,12 +199,15 @@ neighbor_plot <- region_names_distances %>%
     y = ""
   ) +
   theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
-neighbor_plot
+neighbors_plot
 
-t.test(namedist ~ is_neighbor, data = region_names_distances)
-wilcox.test(namedist ~ is_neighbor, data = region_names_distances)
-region_names_distances %>% group_by(is_neighbor) %>% summarise(m = median(namedist))
+if (!get0("IS_PAPER", ifnotfound = FALSE)) {
+  t.test(namedist ~ is_neighbor, data = region_names_distances)
+  wilcox.test(namedist ~ is_neighbor, data = region_names_distances)
+  region_names_distances %>% group_by(is_neighbor) %>% summarise(m = median(namedist))
+}
 
+# Plot about distance (Figure 2)
 distance_plot <- region_names_distances %>% 
   ggplot(aes(x = geo_distance, y = namedist)) +
   geom_point(color = "grey50", size = 1, shape = 21) +
@@ -241,16 +234,37 @@ distance_plot <- region_names_distances %>%
   theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
 distance_plot
 
-cor.test(~namedist+geo_distance, data = filter(region_names_distances))$estimate
+if (!get0("IS_PAPER", ifnotfound = FALSE)) {
+  cor.test(~namedist+geo_distance, data = filter(region_names_distances))$estimate
+}
 
-# Tile grid map of regions by naming group
-ru_crs <- st_crs("+proj=aea +lat_0=0 +lon_0=100 +lat_1=68 +lat_2=44 +x_0=0 +y_0=0 +ellps=krass +towgs84=28,-130,-95,0,0,0,0 +units=m +no_defs")
-ru <- st_read(here("journal-article", "ru.geojson"))
+# Plot about economic regions (Figure 3)
+economic_regions_distances <- region_names_distances %>% 
+  ggplot(aes(x = within, y = namedist)) +
+  geom_violin(draw_quantiles = c(.5)) +
+  geom_text(
+    aes(
+      y = stage(namedist, after_stat = 0),
+      label = after_stat(paste("M == ", round(middle, 2)))
+    ),
+    stat = "boxplot",
+    vjust = -.25,
+    parse = TRUE,
+    size = 3,
+    family = "Segoe UI Semilight",
+  ) +
+  scale_x_discrete(
+    name = "Distance type",
+    labels = c("Inside–outside", "Within")
+  ) +
+  facet_wrap(vars(economic_region), ncol = 3) +
+  labs(
+    y = "Semantic distance between regions"
+  ) +
+  theme_bw(base_family = "Segoe UI Semilight", base_size = 9)
+economic_regions_distances
 
-er_short_labels <- tibble(
-  economic_region = sort(unique(er$economic_region)),
-  label = c("C", "CC", "ES", "FE", "N", "NC", "NW", "U", "V", "VV", "WS")
-)
+# Map of regions by naming strategy (Figure 4)
 er_geo <- ru %>% 
   left_join(er, by = c("shapeISO" = "iso_code")) %>% 
   group_by(economic_region) %>% 
@@ -320,4 +334,3 @@ naming_strategies <- clustered %>%
     legend.justification = c(0.1, 1)
   )
 naming_strategies
-
